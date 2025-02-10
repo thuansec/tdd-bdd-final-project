@@ -102,6 +102,26 @@ def create_products():
 # PLACE YOUR CODE TO LIST ALL PRODUCTS HERE
 #
 
+# Task 4d
+def list_products():
+    products = []
+    name = request.args.get("name")
+    category = request.args.get("category")
+    available = request.args.get("available")
+
+    if name:
+        products = Product.find_by_name(name)
+    elif category:
+        products = Product.find_by_category(category)
+    elif available:
+        available_value = available.lower() in ["true", "yes",  1]
+        products = Product.find_by_availability(available_value)
+    else:
+        products = Product.all()
+
+    results = [product.serialize() for product in products]
+    return results, status.HTTP_200_OK
+
 ######################################################################
 # R E A D   A   P R O D U C T
 ######################################################################
@@ -109,6 +129,19 @@ def create_products():
 #
 # PLACE YOUR CODE HERE TO READ A PRODUCT
 #
+
+# Task 4a
+@app.route("/products/<int:product_id>", methods=["GET"])
+def get_products(product_id):
+    app.logger.info("Request to retrieve a product with id [%s]", product_id)
+
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+
+    app.logger.info("Returning product: %s", product.name)
+    return product.serialize(), status.HTTP_200_OK
+
 
 ######################################################################
 # U P D A T E   A   P R O D U C T
@@ -118,6 +151,23 @@ def create_products():
 # PLACE YOUR CODE TO UPDATE A PRODUCT HERE
 #
 
+# Task 4b
+@app.route("/products/<int:product_id>", methods=["PUT"])
+def update_products(product_id):
+    app.logger.info("Request to retrieve a product with id [%s]", product_id)
+    check_content_type("application/json")
+
+    product = Product.find(product_id)
+    if not product:
+        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+
+    data = request.get_json()
+    product.deserialize(data)
+    product.id = product_id
+    product.update()
+    return make_response(jsonify(product.serilized()), status.HTTP_200_OK)
+
+
 ######################################################################
 # D E L E T E   A   P R O D U C T
 ######################################################################
@@ -126,3 +176,12 @@ def create_products():
 #
 # PLACE YOUR CODE TO DELETE A PRODUCT HERE
 #
+
+# Task 4c
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete(product_id):
+    product = Product.find(product_id)
+    if product:
+        product.delete()
+
+    return make_response("", status.HTTP_204_NO_CONTENT)
